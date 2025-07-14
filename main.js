@@ -1,72 +1,87 @@
-/* global window, document, solanaWeb3, solanaWalletAdapterBase,
+/* global React, ReactDOM, solanaWeb3, solanaWalletAdapterBase,
           solanaWalletAdapterWallets, solanaWalletAdapterReact,
           solanaWalletAdapterReactUi */
-          (() => {
-            const MINT     = new solanaWeb3.PublicKey('3EVHbsvJYsPAJLbbRbDjFjpo35tdE13e7ETqtqaLpump');
-            const REQUIRED = 1_000_000 * 1_000_000; // 1M raw 3EV
-            const conn     = new solanaWeb3.Connection(
-              'https://api.mainnet-beta.solana.com',
-              'confirmed'
-            );
+
+          const { useEffect } = React;
+          const { ConnectionProvider, WalletProvider, useWallet, useConnection } = solanaWalletAdapterReact;
+          const { WalletModalProvider, WalletMultiButton } = solanaWalletAdapterReactUi;
           
-            const status  = document.getElementById('status');
-            const gate    = document.getElementById('gate');
-            const btn     = document.getElementById('btnConnect');
+          // ---------- constants ----------
+          const MINT     = new solanaWeb3.PublicKey('3EVHbsvJYsPAJLbbRbDjFjpo35tdE13e7ETqtqaLpump');
+          const REQUIRED = 1_000_000 * 1_000_000; // 1 M raw 3EV
           
-            /* ---------- helpers ---------- */
-            const log = (msg) => {
-              console.log(msg);
-              status.textContent = msg;
-            };
-            const showGate = (open) => gate.classList.toggle('hidden', !open);
+          // ---------- helpers ----------
+          const log = (msg) => {
+            console.log(msg);
+            document.getElementById('status').textContent = msg;
+          };
+          const showGate = (open) =>
+            document.getElementById('gate').classList.toggle('hidden', !open);
           
-            /* ---------- balance check ---------- */
-            async function checkBalance(pubkey) {
-              try {
-                const accs = await conn.getTokenAccountsByOwner(pubkey, { mint: MINT });
-                let total = 0;
-                accs.value.forEach(({ account }) => {
-                  total += Number(account.data.readBigUInt64LE(64));
-                });
-                return total >= REQUIRED;
-              } catch (e) {
-                log('Balance error: ' + e.message);
-                return false;
-              }
+          // ---------- balance check ----------
+          async function checkBalance(connection, pubkey) {
+            try {
+              const accs = await connection.getTokenAccountsByOwner(pubkey, { mint: MINT });
+              let total = 0;
+              accs.value.forEach(({ account }) => (total += Number(account.data.readBigUInt64LE(64))));
+              return total >= REQUIRED;
+            } catch (e) {
+              log('Balance error: ' + e.message);
+              return false;
             }
+          }
           
-            /* ---------- wallet adapter setup ---------- */
+          // ---------- React components ----------
+          const endpoint = 'https://api.mainnet-beta.solana.com';
+          
+          function Gate() {
+            const { publicKey, signMessage } = useWallet();
+            const { connection } = useConnection();
+          
+            useEffect(() => {
+              if (!publicKey || !signMessage) return;
+          
+              (async () => {
+                try {
+                  // Force user to sign → unlocks key for dApp
+                  const message = new TextEncoder().encode('Welcome to 3EV Gate');
+                  await signMessage(message);
+          
+                  const ok = await checkBalance(connection, publicKey);
+                  log(ok ? 'Wallet verified' : 'Balance < 1M 3EV');
+                  showGate(ok);
+                } catch (e) {
+                  log('Wallet error: ' + e.message);
+                }
+              })();
+            }, [publicKey, signMessage, connection]);
+          
+            return null;
+          }
+          
+          function App() {
             const wallets = [
               new solanaWalletAdapterWallets.PhantomWalletAdapter(),
               new solanaWalletAdapterWallets.SolflareWalletAdapter(),
             ];
           
-            const walletStore = solanaWalletAdapterReact.useWalletStore({
-              wallets,
-              autoConnect: false,
-            });
+            return React.createElement(
+              ConnectionProvider,
+              { endpoint },
+              React.createElement(
+                WalletProvider,
+                { wallets, autoConnect: false },
+                React.createElement(
+                  WalletModalProvider,
+                  {},
+                  React.createElement('div', { id: 'wallet-btn-container' },
+                    React.createElement(WalletMultiButton)
+                  ),
+                  React.createElement(Gate)
+                )
+              )
+            );
+          }
           
-            /* ---------- universal connect / sign ---------- */
-            btn.addEventListener('click', async () => {
-              try {
-                log('Opening wallet modal…');
-                await walletStore.connect(); // shows adapter modal
-                if (!walletStore.publicKey) throw new Error('No public key returned');
-          
-                /* Force the wallet to sign a message – this is the missing step */
-                const encodedMsg = new TextEncoder().encode('Welcome to 3EV Gate');
-                await walletStore.signMessage(encodedMsg);
-          
-                /* Now the wallet has truly “unlocked” and we can safely query balances */
-                const ok = await checkBalance(walletStore.publicKey);
-                log(ok ? 'Verified' : 'Balance too low');
-                showGate(ok);
-              } catch (err) {
-                log('Connection failed: ' + err.message);
-                walletStore.disconnect();
-              }
-            });
-          
-            /* expose for dev tools */
-            window.walletStore = walletStore;
-          })();
+          // ---------- mount ----------
+          ReactDOM.createRoot(document.body).render(React.createElement(App));
