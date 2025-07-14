@@ -2,81 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>3EV Gate – Phantom only</title>
+  <title>3EV Token Gate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <style>
-    body{margin:0;font-family:Inter,Arial,sans-serif;background:#0f172a;color:#fff}
-    #wallet-bar{position:fixed;top:0;right:0;padding:.5rem 1rem;z-index:9999}
-    #gate{margin-top:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 80px)}
-    .hidden{display:none}
-  </style>
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' 'unsafe-inline' https:; img-src https: data:; script-src 'self' 'unsafe-inline' https:; connect-src https: wss:;">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 
 <body>
-  <div id="wallet-bar">
-    <button id="connectBtn">Connect Phantom</button>
-    <span id="status" style="margin-left:.5rem"></span>
-  </div>
+  <header>
+    <button id="btnPhantom">Phantom</button>
+    <button id="btnSolflare">Solflare</button>
+    <button id="btnWalletConnect">WalletConnect</button>
+    <span id="status">Idle</span>
+  </header>
 
-  <!-- gate (initially hidden) -->
-  <div id="gate" class="hidden">
+  <main id="gate" class="hidden">
     <h2>✅ Verified Holder</h2>
-  </div>
+    <p>You hold ≥ 1 000 000 3EV tokens.</p>
+  </main>
 
-  <!-- Solana web3 UMD bundle (Phantom already bundles it) -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.umd.min.js"></script>
-
-  <script>
-    /* helper: wait until window.solana + window.SolanaWeb3 exist */
-    function whenReady(fn) {
-      const check = () => (window.solana && window.SolanaWeb3) ? fn() : setTimeout(check, 100);
-      check();
-    }
-
-    whenReady(() => {
-      const { Connection, PublicKey } = window.SolanaWeb3;
-      const MINT     = new PublicKey('3EVHbsvJYsPAJLbbRbDjFjpo35tdE13e7ETqtqaLpump');
-      const REQUIRED = 1_000_000 * 1_000_000;
-      const conn     = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-
-      const btn  = document.getElementById('connectBtn');
-      const stat = document.getElementById('status');
-      const gate = document.getElementById('gate');
-
-      btn.addEventListener('click', async () => {
-        if (!window.solana?.isPhantom) {
-          alert('Phantom wallet not found. Please install it first.');
-          return;
-        }
-
-        btn.disabled = true;
-        stat.textContent = 'Connecting…';
-
-        try {
-          await window.solana.connect();
-          const pubkey = window.solana.publicKey;
-          stat.textContent = 'Checking balance…';
-
-          const tokenAccs = await conn.getTokenAccountsByOwner(pubkey, { mint: MINT });
-          let total = 0;
-          tokenAccs.value.forEach(({ account }) => {
-            total += Number(account.data.readBigUInt64LE(64));
-          });
-
-          if (total >= REQUIRED) {
-            stat.textContent = 'OK';
-            gate.classList.remove('hidden');
-          } else {
-            stat.textContent = 'Insufficient 3EV';
-            gate.classList.add('hidden');
-          }
-        } catch (err) {
-          stat.textContent = 'Error: ' + err.message;
-        } finally {
-          btn.disabled = false;
-        }
-      });
-    });
-  </script>
+  <!-- WalletConnect v2 bundle -->
+  <script src="https://unpkg.com/@walletconnect/solib@latest/dist/umd/index.min.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
