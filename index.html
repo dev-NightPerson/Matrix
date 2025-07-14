@@ -11,9 +11,7 @@
 
 <body>
   <header>
-    <button id="btnPhantom">Phantom</button>
-    <button id="btnSolflare">Solflare</button>
-    <button id="btnWalletConnect">WalletConnect</button>
+    <button id="btnConnect">Connect Wallet</button>
     <span id="status">Idle</span>
   </header>
 
@@ -22,8 +20,12 @@
     <p>You hold ≥ 1 000 000 3EV tokens.</p>
   </main>
 
+  <!-- Solana Web3.js -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
   <!-- WalletConnect v2 bundle -->
   <script src="https://unpkg.com/@walletconnect/solib@latest/dist/umd/index.min.js"></script>
+
   <script src="main.js"></script>
 </body>
 </html>

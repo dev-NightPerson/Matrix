@@ -28,38 +28,31 @@
       }
     }
   
-    /* ---------- 1. Phantom ---------- */
-    document.getElementById('btnPhantom').addEventListener('click', async () => {
-      if (!window.solana?.isPhantom) return log('Phantom not installed');
-      log('Connecting Phantom…');
+    /* ---------- Universal “Connect Wallet” button ---------- */
+    document.getElementById('btnConnect').addEventListener('click', async () => {
       try {
-        await window.solana.connect();
-        const ok = await checkBalance(window.solana.publicKey);
-        log(ok ? 'Phantom OK' : 'Phantom low');
-        showGate(ok);
-      } catch (e) {
-        log('Phantom error: ' + e.message);
-      }
-    });
+        // 1. Try Phantom
+        if (window.solana?.isPhantom) {
+          log('Connecting Phantom…');
+          await window.solana.connect();
+          const ok = await checkBalance(window.solana.publicKey);
+          log(ok ? 'Phantom OK' : 'Phantom low');
+          showGate(ok);
+          return;
+        }
   
-    /* ---------- 2. Solflare ---------- */
-    document.getElementById('btnSolflare').addEventListener('click', async () => {
-      if (!window.solflare?.isSolflare) return log('Solflare not installed');
-      log('Connecting Solflare…');
-      try {
-        await window.solflare.connect();
-        const ok = await checkBalance(window.solflare.publicKey);
-        log(ok ? 'Solflare OK' : 'Solflare low');
-        showGate(ok);
-      } catch (e) {
-        log('Solflare error: ' + e.message);
-      }
-    });
+        // 2. Try Solflare
+        if (window.solflare?.isSolflare) {
+          log('Connecting Solflare…');
+          await window.solflare.connect();
+          const ok = await checkBalance(window.solflare.publicKey);
+          log(ok ? 'Solflare OK' : 'Solflare low');
+          showGate(ok);
+          return;
+        }
   
-    /* ---------- 3. WalletConnect v2 ---------- */
-    document.getElementById('btnWalletConnect').addEventListener('click', async () => {
-      log('Opening WalletConnect…');
-      try {
+        // 3. Fallback to WalletConnect
+        log('Opening WalletConnect…');
         await window.solib.init({
           connectors: [
             new window.solib.WalletConnectConnector({
@@ -74,8 +67,8 @@
         const ok = await checkBalance(wallet);
         log(ok ? 'WC OK' : 'WC low');
         showGate(ok);
-      } catch (e) {
-        log('WalletConnect error: ' + e.message);
+      } catch (err) {
+        log('Connection error: ' + err.message);
       }
     });
   })();
