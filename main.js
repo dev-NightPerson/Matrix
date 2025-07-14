@@ -1,14 +1,17 @@
-/* global React, ReactDOM, solanaWeb3, solanaWalletAdapterBase,
-          solanaWalletAdapterWallets, solanaWalletAdapterReact,
-          solanaWalletAdapterReactUi */
+/* global React, ReactDOM, solanaWeb3,
+          walletAdapterBase, walletAdapterWallets,
+          walletAdapterReact, walletAdapterReactUi */
 
-          const { useEffect } = React;
-          const { ConnectionProvider, WalletProvider, useWallet, useConnection } = solanaWalletAdapterReact;
-          const { WalletModalProvider, WalletMultiButton } = solanaWalletAdapterReactUi;
+          import './style.js'; // keeps bundler-free; optional
+
+          const { useEffect, createElement } = React;
+          const { ConnectionProvider, WalletProvider, useWallet, useConnection } = walletAdapterReact;
+          const { WalletModalProvider, WalletMultiButton } = walletAdapterReactUi;
+          const { PhantomWalletAdapter, SolflareWalletAdapter } = walletAdapterWallets;
           
-          // ---------- constants ----------
           const MINT     = new solanaWeb3.PublicKey('3EVHbsvJYsPAJLbbRbDjFjpo35tdE13e7ETqtqaLpump');
           const REQUIRED = 1_000_000 * 1_000_000; // 1 M raw 3EV
+          const ENDPOINT = 'https://api.mainnet-beta.solana.com';
           
           // ---------- helpers ----------
           const log = (msg) => {
@@ -21,9 +24,9 @@
           // ---------- balance check ----------
           async function checkBalance(connection, pubkey) {
             try {
-              const accs = await connection.getTokenAccountsByOwner(pubkey, { mint: MINT });
+              const { value: accounts } = await connection.getTokenAccountsByOwner(pubkey, { mint: MINT });
               let total = 0;
-              accs.value.forEach(({ account }) => (total += Number(account.data.readBigUInt64LE(64))));
+              accounts.forEach(({ account }) => (total += Number(account.data.readBigUInt64LE(64))));
               return total >= REQUIRED;
             } catch (e) {
               log('Balance error: ' + e.message);
@@ -32,7 +35,7 @@
           }
           
           // ---------- React components ----------
-          const endpoint = 'https://api.mainnet-beta.solana.com';
+          const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
           
           function Gate() {
             const { publicKey, signMessage } = useWallet();
@@ -43,12 +46,12 @@
           
               (async () => {
                 try {
-                  // Force user to sign → unlocks key for dApp
-                  const message = new TextEncoder().encode('Welcome to 3EV Gate');
-                  await signMessage(message);
+                  // force wallet unlock via signature
+                  const msg = new TextEncoder().encode('Welcome to 3EV Gate');
+                  await signMessage(msg);
           
                   const ok = await checkBalance(connection, publicKey);
-                  log(ok ? 'Wallet verified' : 'Balance < 1M 3EV');
+                  log(ok ? 'Verified' : 'Balance < 1M 3EV');
                   showGate(ok);
                 } catch (e) {
                   log('Wallet error: ' + e.message);
@@ -60,28 +63,21 @@
           }
           
           function App() {
-            const wallets = [
-              new solanaWalletAdapterWallets.PhantomWalletAdapter(),
-              new solanaWalletAdapterWallets.SolflareWalletAdapter(),
-            ];
-          
-            return React.createElement(
+            return createElement(
               ConnectionProvider,
-              { endpoint },
-              React.createElement(
+              { endpoint: ENDPOINT },
+              createElement(
                 WalletProvider,
                 { wallets, autoConnect: false },
-                React.createElement(
+                createElement(
                   WalletModalProvider,
                   {},
-                  React.createElement('div', { id: 'wallet-btn-container' },
-                    React.createElement(WalletMultiButton)
-                  ),
-                  React.createElement(Gate)
+                  createElement('div', { id: 'wallet-btn-container' }, createElement(WalletMultiButton)),
+                  createElement(Gate)
                 )
               )
             );
           }
           
           // ---------- mount ----------
-          ReactDOM.createRoot(document.body).render(React.createElement(App));
+          ReactDOM.createRoot(document.body).render(createElement(App));

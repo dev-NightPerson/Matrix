@@ -4,18 +4,15 @@
   <meta charset="UTF-8"/>
   <title>3EV Token Gate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <!-- Solana Wallet-Adapter CSS (modal styles) -->
+  <!-- wallet-adapter modal styles -->
   <link rel="stylesheet"
         href="https://unpkg.com/@solana/wallet-adapter-react-ui@0.9.35/styles.css"/>
-
-  <!-- Your own styles -->
   <link rel="stylesheet" href="style.css"/>
 </head>
 
 <body>
   <header>
-    <!-- Wallet-Adapter will inject its own button here -->
+    <!-- Wallet-Adapter injects the button here -->
     <div id="wallet-btn-container"></div>
     <span id="status">Idle</span>
   </header>
@@ -25,18 +22,15 @@
     <p>You hold ≥ 1&nbsp;000&nbsp;000 3EV tokens.</p>
   </main>
 
-  <!-- React + ReactDOM (for wallet-adapter) -->
+  <!-- React + Solana UMD bundles -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-
-  <!-- Solana stack (all UMD) -->
   <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/dist/wallet-adapter-base.umd.js"></script>
   <script src="https://unpkg.com/@solana/wallet-adapter-wallets@0.19.16/dist/wallet-adapter-wallets.umd.js"></script>
   <script src="https://unpkg.com/@solana/wallet-adapter-react@0.15.32/dist/wallet-adapter-react.umd.js"></script>
   <script src="https://unpkg.com/@solana/wallet-adapter-react-ui@0.9.35/dist/wallet-adapter-react-ui.umd.js"></script>
 
-  <!-- Your glue code -->
-  <script src="main.js" type="module"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
